@@ -7,14 +7,16 @@
 
 import UIKit
 import CoreData
+import MapKit
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
-
-
+    
+    public static var launchRegion = MKCoordinateRegion()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        UserDefaultsHandling.checkRegular()
         return true
     }
 
@@ -76,6 +78,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
     }
+    
 
 }
 
