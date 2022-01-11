@@ -63,7 +63,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         //collectionView
         photoCollectionView.delegate = self
         photoCollectionView.dataSource = self
-        collectionFlowSizeProperties()
+        //collectionFlowSizeProperties()
         
     }
     
@@ -113,6 +113,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
                 
             }
         }
+
         
         return cell
         
