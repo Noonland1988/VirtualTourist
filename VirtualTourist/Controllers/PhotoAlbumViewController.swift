@@ -29,11 +29,26 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     
     @IBAction func okButtonTapped(_ sender: UIBarButtonItem) {
         self.navigationController?.popViewController(animated: true)
-        photoList.removeAll()
+        fetchedResultsController = nil
+        flickrPages = nil
     }
     
     
     @IBAction func newCollectionButtonTapped(_ sender: Any) {
+        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Photo")
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        
+        do {
+            try dataController.persistentContainer.persistentStoreCoordinator.execute(deleteRequest, with: dataController.viewContext)
+        } catch let errors as NSError {
+            //handle the error...
+        }
+        //dataController.viewContext.delete(fetchedResultsController)
+        getPhotoListHandler(pages: flickrPages)
+        try? dataController.viewContext.save()
+        
+        
+        
     }
     
     // MARK: Variables
@@ -43,9 +58,11 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     
     var fetchedResultsController: NSFetchedResultsController<Photo>!
     
-    var collectionViewPhotos: [Photo] = []
+    var flickrPages: Int!
     
-    var photoList = [photo]()
+    //var collectionViewPhotos: [Photo] = []
+    
+    //var photoList = [photo]()
     
     
     // MARK: Functions
@@ -54,7 +71,14 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         navigationController?.setNavigationBarHidden(false, animated: false)
         addAPinOnTheMap()
         setUpFetchedResultsController()
-        getPhotoListHandler()
+        if photoCollectionView.numberOfItems(inSection: 0) == 0 {
+            getPhotoListHandler(pages: 1)
+            print("Photohandler activated")
+        } else {
+            flickrPages = 1
+            print("Photos alreadly exist")
+        }
+
     }
     
     override func viewDidLoad() {
@@ -63,9 +87,14 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         //collectionView
         photoCollectionView.delegate = self
         photoCollectionView.dataSource = self
-        //collectionFlowSizeProperties()
+        collectionFlowSizeProperties()
         
     }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        fetchedResultsController = nil
+    }
+    
     
     // MARK: MapView functions
     
@@ -106,7 +135,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         let aPhoto = fetchedResultsController.object(at: indexPath)
         
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "photoCollectionCell", for: indexPath) as! PhotoAlbumCollectionCell
-        //print("data size of aPhoto \(aPhoto)")
+
         DispatchQueue.main.async {
             if let imageData = aPhoto.photoImage{
                 cell.imageView.image = UIImage(data: imageData)
@@ -123,7 +152,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         let selectedCell = fetchedResultsController.object(at: indexPath)
         dataController.viewContext.delete(selectedCell)
         try? dataController.viewContext.save()
-        //collectionView.deleteItems(at: [indexPath])
+        
     }
     
     // MARK: handling CoreData
@@ -150,11 +179,12 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     }
     
     // MARK: get photoList and add in CoreData
-    func getPhotoListHandler(){
-        let requestURL = FlickrClient.requestPhotosURL(coordinate: pickedLocation, page: 1)
+    func getPhotoListHandler(pages: Int){
+        let requestURL = FlickrClient.requestPhotosURL(coordinate: pickedLocation, page: Int.random(in: 1...pages))
         
         FlickrClient.taskForGETRequest(url: requestURL, responseType: PhotoList.self){ response, error in
             if let response = response {
+                self.flickrPages = response.photos.pages
                 for i in response.photos.photo {
                     FlickrClient.getPhotoImage(serverId: i.server, id: i.id, secret: i.secret, sizeSuffix: "q") {data, error in
                         if let data = data {
@@ -191,9 +221,10 @@ extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
             
         }
     }
+
     
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        //photoCollectionView.reloadData()
+        photoCollectionView.reloadData()
     }
     
 }

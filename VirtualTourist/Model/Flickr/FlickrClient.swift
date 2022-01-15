@@ -65,29 +65,6 @@ class FlickrClient{
             completion(nil, error)
         }
     }
-        
-//        let task = URLSession.shared.dataTask(with: imageURL!) { data, response, error in
-//            guard let data = data else {
-//                DispatchQueue.main.async {
-//                    print("no data")
-//                    completion(nil,error)
-//                }
-//                return
-//          }
-//            let responseObject = try UIImage(data: data)
-//            if responseObject == nil {
-//                DispatchQueue.main.async {
-//                    print("Not a image data")
-//                    completion(nil, error)
-//                }
-//            } else {
-//                DispatchQueue.main.async {
-//                    print("imageHandled")
-//                    completion(responseObject, nil)
-//                }
-//            }
-//        }
-//        task.resume()
     
     
 }
