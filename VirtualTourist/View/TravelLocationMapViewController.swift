@@ -25,6 +25,8 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate {
     var coordinates: [Coordinate] = []
     
     var pickedLocation : CLLocationCoordinate2D!
+    
+    
 
     
     // MARK: Functions
