@@ -35,15 +35,17 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     
     
     @IBAction func newCollectionButtonTapped(_ sender: Any) {
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Photo")
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-        
-        do {
-            try dataController.persistentContainer.persistentStoreCoordinator.execute(deleteRequest, with: dataController.viewContext)
-        } catch let errors as NSError {
-            //handle the error...
-        }
-        //dataController.viewContext.delete(fetchedResultsController)
+//        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Photo")
+//        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+//
+//        do {
+//            print("deletion initiated")
+//            try dataController.persistentContainer.persistentStoreCoordinator.execute(deleteRequest, with: dataController.viewContext)
+//        } catch let errors as NSError {
+//            print("deletion unsuccessful")
+//            //handle the error...
+//        }
+        //dataController.viewContext.delete(photo)
         getPhotoListHandler(pages: flickrPages)
         try? dataController.viewContext.save()
         
@@ -87,6 +89,9 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         //collectionView
         photoCollectionView.delegate = self
         photoCollectionView.dataSource = self
+        self.view.isUserInteractionEnabled = true
+        photoCollectionView.isUserInteractionEnabled = true
+        photoCollectionView.allowsSelection = true
         collectionFlowSizeProperties()
         
     }
@@ -150,13 +155,14 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let selectedCell = fetchedResultsController.object(at: indexPath)
+        print("a cell selected")
         dataController.viewContext.delete(selectedCell)
         try? dataController.viewContext.save()
         
     }
     
     // MARK: handling CoreData
-    func setUpFetchedResultsController() {
+    fileprivate func setUpFetchedResultsController() {
         let fetchRequest: NSFetchRequest<Photo> = Photo.fetchRequest()
         let sortDescriptor = NSSortDescriptor(key: "id", ascending: false)
         fetchRequest.sortDescriptors = [sortDescriptor]

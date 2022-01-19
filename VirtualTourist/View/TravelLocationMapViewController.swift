@@ -9,7 +9,7 @@ import UIKit
 import MapKit
 import CoreData
 
-class TravelLocationMapViewController: UIViewController,MKMapViewDelegate {
+class TravelLocationMapViewController: UIViewController,MKMapViewDelegate, NSFetchedResultsControllerDelegate {
     
     // MARK: Outlets
     @IBOutlet weak var travelMapView: MKMapView!
@@ -22,11 +22,11 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate {
     // MARK: Variables
     var dataController: DataController!
     
-    var coordinates: [Coordinate] = []
+    //var coordinates: [Coordinate] = []
     
     var pickedLocation : CLLocationCoordinate2D!
     
-    
+    var fetchedResultController: NSFetchedResultsController<Coordinate>!
 
     
     // MARK: Functions
@@ -41,18 +41,18 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate {
         super.viewDidLoad()
 
         travelMapView.delegate = self
-        
         //handling CoreData
-        print("handleCoreData")
-        let fetchRequest: NSFetchRequest<Coordinate> = Coordinate.fetchRequest()
-        let sortDescriptor = NSSortDescriptor(key: "creationDate", ascending: false)
-        fetchRequest.sortDescriptors = [sortDescriptor]
-        
-        if let result = try? dataController.viewContext.fetch(fetchRequest) {
-            coordinates = result
-        // map  reload
-        }
-        getAnnotationsFromCoordinates(coordinates: coordinates)
+//        print("handleCoreData")
+//        let fetchRequest: NSFetchRequest<Coordinate> = Coordinate.fetchRequest()
+//        let sortDescriptor = NSSortDescriptor(key: "creationDate", ascending: false)
+//        fetchRequest.sortDescriptors = [sortDescriptor]
+//
+//        if let result = try? dataController.viewContext.fetch(fetchRequest) {
+//            coordinates = result
+//        // map  reload
+//        }
+        setUpFetchedResultController()
+        getAnnotationsFromCoordinates(coordinates: fetchedResultController.fetchedObjects!)
         
         //Create UIGestureRecoginizer
         let myLongPress: UILongPressGestureRecognizer = UILongPressGestureRecognizer()
@@ -61,6 +61,11 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate {
         //Add UIGesture Recognizer
         travelMapView.addGestureRecognizer(myLongPress)
         
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        fetchedResultController = nil
     }
     
     // MARK: MKMapViewDelegate
@@ -123,6 +128,22 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate {
     
     // MARK: CoreData handling
     
+    fileprivate func setUpFetchedResultController() {
+        let fetchRequest: NSFetchRequest<Coordinate> = Coordinate.fetchRequest()
+        let sortDescriptor = NSSortDescriptor(key: "creationDate", ascending: false)
+        fetchRequest.sortDescriptors = [sortDescriptor]
+        
+        fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: nil)
+        fetchedResultController.delegate = self //added NSFetchedResultsControllerDelegate to the class for this
+        
+        do {
+            try fetchedResultController.performFetch()
+        } catch {
+            fatalError("The fetch could not be performed:\(error.localizedDescription)")
+        }
+    }
+    
+    
     func addCoordinate(newCoordinate: CLLocationCoordinate2D) {
         let coordinate = Coordinate(context: dataController.viewContext)
         coordinate.latitude = Float(newCoordinate.latitude)
@@ -132,7 +153,7 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate {
         
     }
     
-    func getAnnotationsFromCoordinates(coordinates: [Coordinate]) {
+    func getAnnotationsFromCoordinates(coordinates: [Coordinate]) { //handle here for saving...
         var annotations = [MKPointAnnotation]()
         
         for coordinate in coordinates {
@@ -151,6 +172,7 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate {
             let photoAlbumVC = segue.destination as? PhotoAlbumViewController
             photoAlbumVC?.pickedLocation = pickedLocation
             photoAlbumVC?.dataController = dataController
+            
         }
     }
     
