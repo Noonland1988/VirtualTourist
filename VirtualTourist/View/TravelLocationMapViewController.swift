@@ -22,11 +22,13 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate, NSFet
     // MARK: Variables
     var dataController: DataController!
     
-    //var coordinates: [Coordinate] = []
+    var coordinates: [Coordinate] = []
     
     var pickedLocation : CLLocationCoordinate2D!
     
     var fetchedResultController: NSFetchedResultsController<Coordinate>!
+    
+    var coordinate: Coordinate!
 
     
     // MARK: Functions
@@ -42,17 +44,17 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate, NSFet
 
         travelMapView.delegate = self
         //handling CoreData
-//        print("handleCoreData")
-//        let fetchRequest: NSFetchRequest<Coordinate> = Coordinate.fetchRequest()
-//        let sortDescriptor = NSSortDescriptor(key: "creationDate", ascending: false)
-//        fetchRequest.sortDescriptors = [sortDescriptor]
-//
-//        if let result = try? dataController.viewContext.fetch(fetchRequest) {
-//            coordinates = result
-//        // map  reload
-//        }
-        setUpFetchedResultController()
-        getAnnotationsFromCoordinates(coordinates: fetchedResultController.fetchedObjects!)
+        print("handleCoreData")
+        let fetchRequest: NSFetchRequest<Coordinate> = Coordinate.fetchRequest()
+        let sortDescriptor = NSSortDescriptor(key: "creationDate", ascending: false)
+        fetchRequest.sortDescriptors = [sortDescriptor]
+
+        if let result = try? dataController.viewContext.fetch(fetchRequest) {
+            coordinates = result
+        // map  reload
+        }
+//        setUpFetchedResultController()
+        getAnnotationsFromCoordinates(coordinates: coordinates) //fetchedResultController.fetchedObjects!
         
         //Create UIGestureRecoginizer
         let myLongPress: UILongPressGestureRecognizer = UILongPressGestureRecognizer()
@@ -97,6 +99,16 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate, NSFet
     func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
         if let annotation = view.annotation{
             self.pickedLocation = annotation.coordinate
+            for i in coordinates { //fetchedResultController.fetchedObjects!
+                print("check coordinates")
+                if i.latitude == Float(pickedLocation.latitude) && i.longitude == Float(pickedLocation.longitude) {
+                    print("found coordinate")
+                    coordinate = i
+                    break
+                } else {
+                    print("No exact match coordinate")
+                }
+            }
             self.performSegue(withIdentifier: "annotationTapped", sender: nil)
         }
     }
@@ -119,7 +131,7 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate, NSFet
         
         //add to CoreData Coordinate? ??
         addCoordinate(newCoordinate: longPressedLocation)
-        
+
         //add a pin on the map
         travelMapView.addAnnotation(newPin)
        
@@ -128,20 +140,20 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate, NSFet
     
     // MARK: CoreData handling
     
-    fileprivate func setUpFetchedResultController() {
-        let fetchRequest: NSFetchRequest<Coordinate> = Coordinate.fetchRequest()
-        let sortDescriptor = NSSortDescriptor(key: "creationDate", ascending: false)
-        fetchRequest.sortDescriptors = [sortDescriptor]
-        
-        fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: nil)
-        fetchedResultController.delegate = self //added NSFetchedResultsControllerDelegate to the class for this
-        
-        do {
-            try fetchedResultController.performFetch()
-        } catch {
-            fatalError("The fetch could not be performed:\(error.localizedDescription)")
-        }
-    }
+//    fileprivate func setUpFetchedResultController() {
+//        let fetchRequest: NSFetchRequest<Coordinate> = Coordinate.fetchRequest()
+//        let sortDescriptor = NSSortDescriptor(key: "creationDate", ascending: false)
+//        fetchRequest.sortDescriptors = [sortDescriptor]
+//
+//        fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: nil)
+//        fetchedResultController.delegate = self //added NSFetchedResultsControllerDelegate to the class for this
+//
+//        do {
+//            try fetchedResultController.performFetch()
+//        } catch {
+//            fatalError("The fetch could not be performed:\(error.localizedDescription)")
+//        }
+//    }
     
     
     func addCoordinate(newCoordinate: CLLocationCoordinate2D) {
@@ -149,9 +161,11 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate, NSFet
         coordinate.latitude = Float(newCoordinate.latitude)
         coordinate.longitude = Float(newCoordinate.longitude)
         coordinate.creationDate = Date()
+        coordinate.pin = "(\(String(coordinate.latitude)),\(String(coordinate.longitude)))"
         try? dataController.viewContext.save()
-        
+        coordinates.append(coordinate)
     }
+    
     
     func getAnnotationsFromCoordinates(coordinates: [Coordinate]) { //handle here for saving...
         var annotations = [MKPointAnnotation]()
@@ -172,7 +186,9 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate, NSFet
             let photoAlbumVC = segue.destination as? PhotoAlbumViewController
             photoAlbumVC?.pickedLocation = pickedLocation
             photoAlbumVC?.dataController = dataController
-            
+            photoAlbumVC?.coordinate = coordinate
+
+
         }
     }
     

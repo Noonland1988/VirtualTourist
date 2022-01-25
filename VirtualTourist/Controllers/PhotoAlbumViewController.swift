@@ -29,23 +29,24 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     
     @IBAction func okButtonTapped(_ sender: UIBarButtonItem) {
         self.navigationController?.popViewController(animated: true)
-        fetchedResultsController = nil
-        flickrPages = nil
+       // fetchedResultsController = nil
+        //flickrPages = nil
     }
     
     
     @IBAction func newCollectionButtonTapped(_ sender: Any) {
-//        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Photo")
-//        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-//
-//        do {
-//            print("deletion initiated")
-//            try dataController.persistentContainer.persistentStoreCoordinator.execute(deleteRequest, with: dataController.viewContext)
-//        } catch let errors as NSError {
-//            print("deletion unsuccessful")
-//            //handle the error...
-//        }
-        //dataController.viewContext.delete(photo)
+        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Photo")
+        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+        let predicate = NSPredicate(format: "coordinate == %@", coordinate)
+        fetchRequest.predicate = predicate
+
+        do {
+            print("deletion initiated")
+            try dataController.persistentContainer.persistentStoreCoordinator.execute(deleteRequest, with: dataController.viewContext)
+        } catch let errors as NSError {
+            print("deletion unsuccessful")
+            //handle the error...
+        }
         getPhotoListHandler(pages: flickrPages)
         try? dataController.viewContext.save()
         
@@ -62,9 +63,11 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     
     var flickrPages: Int!
     
-    //var collectionViewPhotos: [Photo] = []
+    var pin: String!
     
-    //var photoList = [photo]()
+    var coordinate: Coordinate!
+    
+    private var blocks:[() -> Void] = [] //used in extension PAVC managing changes
     
     
     // MARK: Functions
@@ -97,7 +100,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     }
     
     override func viewDidDisappear(_ animated: Bool) {
-        fetchedResultsController = nil
+        //fetchedResultsController = nil
     }
     
     
@@ -126,7 +129,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     }
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        return fetchedResultsController.sections?.count ?? 1
+        return fetchedResultsController.sections?.count ?? 0
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
@@ -167,6 +170,9 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         let sortDescriptor = NSSortDescriptor(key: "id", ascending: false)
         fetchRequest.sortDescriptors = [sortDescriptor]
 
+        let predicate = NSPredicate(format: "coordinate == %@", coordinate)
+        fetchRequest.predicate = predicate
+        
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: "photos")
         fetchedResultsController.delegate = self
 
@@ -181,6 +187,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         let photo = Photo(context: dataController.viewContext)
         photo.id = Int64(id)!
         photo.photoImage = photoImage.jpegData(compressionQuality: 1)
+        photo.coordinate = coordinate
         try? dataController.viewContext.save()
     }
     
@@ -216,21 +223,42 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
 }
 
 extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
-    func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
-        switch type{
-        case .insert:
-            photoCollectionView.insertItems(at: [newIndexPath!])
-        case .delete:
-            photoCollectionView.deleteItems(at: [indexPath!])
-        default:
-            break
-            
-        }
-    }
 
+
+        func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
+            switch type {
+            case .delete:
+                blocks.append { [weak self] in
+                    self?.photoCollectionView.deleteItems(at: [indexPath!])
+                }
+            case .insert:
+                blocks.append  { [weak self] in
+                    self?.photoCollectionView.insertItems(at: [newIndexPath!])
+                }
+            case .move:
+                blocks.append { [weak self] in
+                    self?.photoCollectionView.moveItem(at: indexPath!, to: newIndexPath!)
+                }
+            case .update:
+                blocks.append { [weak self] in
+                    self?.photoCollectionView.reloadItems(at: [indexPath!])
+                }
+            @unknown default:
+                break
+            }
+        }
+
+        func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+            blocks.removeAll()
+        }
+
+        func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+            photoCollectionView.performBatchUpdates({
+                self.blocks.forEach { (block) in
+                    block()
+                }
+            }, completion: nil)
+        }
     
-    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        photoCollectionView.reloadData()
-    }
     
 }

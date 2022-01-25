@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="19574" systemVersion="21A559" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="19574" systemVersion="21C52" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="Coordinate" representedClassName="Coordinate" syncable="YES" codeGenerationType="class">
         <attribute name="creationDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="latitude" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="longitude" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="pin" optional="YES" attributeType="String"/>
         <relationship name="photos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Photo" inverseName="coordinate" inverseEntity="Photo"/>
     </entity>
     <entity name="Photo" representedClassName="Photo" syncable="YES" codeGenerationType="class">
@@ -12,7 +13,7 @@
         <relationship name="coordinate" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Coordinate" inverseName="photos" inverseEntity="Coordinate"/>
     </entity>
     <elements>
-        <element name="Coordinate" positionX="-95.15625" positionY="-14.796875" width="137.26953125" height="89"/>
+        <element name="Coordinate" positionX="-95.15625" positionY="-14.796875" width="137.26953125" height="104"/>
         <element name="Photo" positionX="144.38671875" positionY="-9.6875" width="128" height="74"/>
     </elements>
 </model>
