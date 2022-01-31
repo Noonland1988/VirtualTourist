@@ -29,29 +29,16 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     
     @IBAction func okButtonTapped(_ sender: UIBarButtonItem) {
         self.navigationController?.popViewController(animated: true)
-       // fetchedResultsController = nil
-        //flickrPages = nil
+        fetchedResultsController = nil
+        flickrPages = nil
     }
     
     
     @IBAction func newCollectionButtonTapped(_ sender: Any) {
-        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = NSFetchRequest(entityName: "Photo")
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-        let predicate = NSPredicate(format: "coordinate == %@", coordinate)
-        fetchRequest.predicate = predicate
-
-        do {
-            print("deletion initiated")
-            try dataController.persistentContainer.persistentStoreCoordinator.execute(deleteRequest, with: dataController.viewContext)
-        } catch let errors as NSError {
-            print("deletion unsuccessful")
-            //handle the error...
-        }
+        deleteAllCells()
+        print("deletion completed")
         getPhotoListHandler(pages: flickrPages)
         try? dataController.viewContext.save()
-        
-        
-        
     }
     
     // MARK: Variables
@@ -75,6 +62,12 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(false, animated: false)
         addAPinOnTheMap()
+        
+    }
+    
+    override func viewDidLoad() {
+        mapView.delegate = self
+        
         setUpFetchedResultsController()
         if photoCollectionView.numberOfItems(inSection: 0) == 0 {
             getPhotoListHandler(pages: 1)
@@ -83,11 +76,6 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
             flickrPages = 1
             print("Photos alreadly exist")
         }
-
-    }
-    
-    override func viewDidLoad() {
-        mapView.delegate = self
         
         //collectionView
         photoCollectionView.delegate = self
@@ -100,7 +88,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     }
     
     override func viewDidDisappear(_ animated: Bool) {
-        //fetchedResultsController = nil
+        fetchedResultsController = nil
     }
     
     
@@ -134,7 +122,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         print(fetchedResultsController.sections?[section].numberOfObjects ?? 0)
-        return fetchedResultsController.sections?[section].numberOfObjects ?? 0
+        return fetchedResultsController.sections?[section].numberOfObjects ?? 10
         
         //return photos.count
     }
@@ -143,11 +131,14 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         let aPhoto = fetchedResultsController.object(at: indexPath)
         
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "photoCollectionCell", for: indexPath) as! PhotoAlbumCollectionCell
+//cell.imageView?.image = UIImage(named: "collectionPlaceholder")
 
         DispatchQueue.main.async {
+//            cell.imageView?.image = UIImage(named: "collectionPlaceholder")
             if let imageData = aPhoto.photoImage{
-                cell.imageView.image = UIImage(data: imageData)
-                
+              cell.imageView.image = UIImage(data: imageData)
+            } else {
+                cell.imageView?.image = UIImage(named: "collectionPlaceholder")
             }
         }
 
@@ -173,7 +164,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         let predicate = NSPredicate(format: "coordinate == %@", coordinate)
         fetchRequest.predicate = predicate
         
-        fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: "photos")
+        fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: nil)
         fetchedResultsController.delegate = self
 
         do {
@@ -217,6 +208,12 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
 
     }
     
+    func deleteAllCells(){
+        let cellsToDelete = dataController.viewContext.object(with: self.coordinate.objectID) as! Coordinate
+        cellsToDelete.photos = []
+        print("commance cellsToDelete")
+        try? dataController.viewContext.save()
+    }
 
     
     
