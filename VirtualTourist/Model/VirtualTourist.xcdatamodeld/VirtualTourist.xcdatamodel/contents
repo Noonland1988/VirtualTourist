@@ -10,10 +10,11 @@
     <entity name="Photo" representedClassName="Photo" syncable="YES" codeGenerationType="class">
         <attribute name="id" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="photoImage" optional="YES" attributeType="Binary" allowsExternalBinaryDataStorage="YES"/>
+        <attribute name="photoURL" optional="YES" attributeType="String"/>
         <relationship name="coordinate" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Coordinate" inverseName="photos" inverseEntity="Coordinate"/>
     </entity>
     <elements>
         <element name="Coordinate" positionX="-95.15625" positionY="-14.796875" width="137.26953125" height="104"/>
-        <element name="Photo" positionX="144.38671875" positionY="-9.6875" width="128" height="74"/>
+        <element name="Photo" positionX="144.38671875" positionY="-9.6875" width="128" height="89"/>
     </elements>
 </model>

@@ -53,17 +53,18 @@ class FlickrClient{
         task.resume()
     }
     
-    class func getPhotoImage(serverId: String, id: String, secret: String, sizeSuffix: String, completion: @escaping (UIImage?, Error?) ->Void) {
+    class func getPhotoImageURL(serverId: String, id: String, secret: String, sizeSuffix: String) -> String {
         let imageAddress = "https://live.staticflickr.com" + "/\(serverId)" + "/\(id)_\(secret)_\(sizeSuffix).jpg"
-        let imageURL = URL(string: imageAddress)
-        print(imageAddress)
-        do {
-            let data = try Data(contentsOf: imageURL!)
-            completion(UIImage(data: data), nil)
-        } catch {
-            print(error)
-            completion(nil, error)
-        }
+        return imageAddress
+//        let imageURL = URL(string: imageAddress)
+//        print(imageAddress)
+//        do {
+//            let data = try Data(contentsOf: imageURL!)
+//            completion(UIImage(data: data), nil)
+//        } catch {
+//            print(error)
+//            completion(nil, error)
+//        }
     }
     
     

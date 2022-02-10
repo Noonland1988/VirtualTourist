@@ -50,6 +50,8 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     
     var flickrPages: Int!
     
+    var downloadedphotoList: PhotoList!
+    
     var pin: String!
     
     var coordinate: Coordinate!
@@ -123,29 +125,33 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         print(fetchedResultsController.sections?[section].numberOfObjects ?? 0)
         return fetchedResultsController.sections?[section].numberOfObjects ?? 10
-        
-        //return photos.count
+
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let aPhoto = fetchedResultsController.object(at: indexPath)
         
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "photoCollectionCell", for: indexPath) as! PhotoAlbumCollectionCell
-//cell.imageView?.image = UIImage(named: "collectionPlaceholder")
-
-        DispatchQueue.main.async {
-//            cell.imageView?.image = UIImage(named: "collectionPlaceholder")
-            if let imageData = aPhoto.photoImage{
-              cell.imageView.image = UIImage(data: imageData)
-            } else {
-                cell.imageView?.image = UIImage(named: "collectionPlaceholder")
+        cell.imageView.image = UIImage(named: "collectionPlaceholder")
+        
+        if let photoURL = aPhoto.photoURL {
+            self.getAImage(url: photoURL) { response, error in
+                if let response = response {
+//                    aPhoto.photoImage = response.jpegData(compressionQuality: 1)
+                    cell.imageView.image = response
+                } else {
+                    print("could not find a image")
+                }
             }
+        } else {
+            print("could not find image url")
         }
-
         
         return cell
         
     }
+    
+    
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let selectedCell = fetchedResultsController.object(at: indexPath)
@@ -174,14 +180,16 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         }
     }
     
-    func addCoreDataPhoto(id: String, photoImage: UIImage) {
+    func addCoreDataPhoto(id: String, photoImage: UIImage, photoURL: String) {
         let photo = Photo(context: dataController.viewContext)
         photo.id = Int64(id)!
         photo.photoImage = photoImage.jpegData(compressionQuality: 1)
         photo.coordinate = coordinate
+        photo.photoURL = photoURL
         try? dataController.viewContext.save()
     }
     
+
     // MARK: get photoList and add in CoreData
     func getPhotoListHandler(pages: Int){
         let requestURL = FlickrClient.requestPhotosURL(coordinate: pickedLocation, page: Int.random(in: 1...pages))
@@ -189,24 +197,41 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         FlickrClient.taskForGETRequest(url: requestURL, responseType: PhotoList.self){ response, error in
             if let response = response {
                 self.flickrPages = response.photos.pages
+                self.downloadedphotoList = response
                 for i in response.photos.photo {
-                    FlickrClient.getPhotoImage(serverId: i.server, id: i.id, secret: i.secret, sizeSuffix: "q") {data, error in
-                        if let data = data {
-                            self.addCoreDataPhoto(id: i.id, photoImage: data)
-                            print(data)
-                            
-                            
-                        } else {
-                            print("No photo data found")
-                        }
-                    }
+                    //id, url
+                    self.addCoreDataPhoto(id: i.id, photoImage: UIImage(named: "collectionPlaceholder")!,photoURL: FlickrClient.getPhotoImageURL(serverId: i.server, id: i.id, secret: i.secret, sizeSuffix: "q"))
                 }
             } else {
                 print("could not find the list")
             }
         }
-
     }
+    
+    
+    func getAImage(url:String, completion: @escaping (UIImage?, Error?) -> Void) {
+        let imageURL = URL(string: url)
+        do {
+            let data = try Data(contentsOf: imageURL!)
+            completion(UIImage(data: data), nil)
+        } catch {
+            completion(nil, error)
+        }
+        
+    }
+    //        let imageURL = URL(string: imageAddress)
+    //        print(imageAddress)
+    //        do {
+    //            let data = try Data(contentsOf: imageURL!)
+    //            completion(UIImage(data: data), nil)
+    //        } catch {
+    //            print(error)
+    //            completion(nil, error)
+    //        }
+
+    
+    
+    
     
     func deleteAllCells(){
         let cellsToDelete = dataController.viewContext.object(with: self.coordinate.objectID) as! Coordinate
@@ -216,6 +241,25 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     }
 
     
+// Does not seems to work...
+//    func updateCoreDataPhoto() {
+//        print("updateCoreDataPhoto initiated")
+//        let coreDataPhotos = dataController.viewContext.object(with: self.coordinate.objectID) as! Coordinate
+//        for i in coreDataPhotos.photos!.allObjects as! [Photo] {
+//            if let photoURL = i.photoURL{
+//                self.getAImage(url: photoURL) { response, error in
+//                    if let response = response {
+//                        i.photoImage = response.jpegData(compressionQuality: 1)
+//                    } else {
+//                        print("could not find a image")
+//                    }
+//                }
+//            } else {
+//                print("could not find image url")
+//            }
+//        }
+//        try? dataController.viewContext.save()
+//    }
     
 }
 
