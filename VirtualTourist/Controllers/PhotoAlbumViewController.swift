@@ -137,7 +137,6 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         if let photoURL = aPhoto.photoURL {
             self.getAImage(url: photoURL) { response, error in
                 if let response = response {
-//                    aPhoto.photoImage = response.jpegData(compressionQuality: 1)
                     cell.imageView.image = response
                 } else {
                     print("could not find a image")
@@ -180,10 +179,10 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         }
     }
     
-    func addCoreDataPhoto(id: String, photoImage: UIImage, photoURL: String) {
+    func addCoreDataPhoto(id: String, photoURL: String) {
         let photo = Photo(context: dataController.viewContext)
         photo.id = Int64(id)!
-        photo.photoImage = photoImage.jpegData(compressionQuality: 1)
+        //photo.photoImage = photoImage.jpegData(compressionQuality: 1)
         photo.coordinate = coordinate
         photo.photoURL = photoURL
         try? dataController.viewContext.save()
@@ -200,7 +199,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
                 self.downloadedphotoList = response
                 for i in response.photos.photo {
                     //id, url
-                    self.addCoreDataPhoto(id: i.id, photoImage: UIImage(named: "collectionPlaceholder")!,photoURL: FlickrClient.getPhotoImageURL(serverId: i.server, id: i.id, secret: i.secret, sizeSuffix: "q"))
+                    self.addCoreDataPhoto(id: i.id, photoURL: FlickrClient.getPhotoImageURL(serverId: i.server, id: i.id, secret: i.secret, sizeSuffix: "q"))
                 }
             } else {
                 print("could not find the list")
@@ -219,19 +218,6 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         }
         
     }
-    //        let imageURL = URL(string: imageAddress)
-    //        print(imageAddress)
-    //        do {
-    //            let data = try Data(contentsOf: imageURL!)
-    //            completion(UIImage(data: data), nil)
-    //        } catch {
-    //            print(error)
-    //            completion(nil, error)
-    //        }
-
-    
-    
-    
     
     func deleteAllCells(){
         let cellsToDelete = dataController.viewContext.object(with: self.coordinate.objectID) as! Coordinate
