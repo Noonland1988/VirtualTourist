@@ -264,7 +264,8 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
 
 extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
 
-
+// Used this page to apply the collection view updating: https://qiita.com/coe/items/c1ba53130e4d8b0e57f2
+    
         func controller(_ controller: NSFetchedResultsController<NSFetchRequestResult>, didChange anObject: Any, at indexPath: IndexPath?, for type: NSFetchedResultsChangeType, newIndexPath: IndexPath?) {
             switch type {
             case .delete:
