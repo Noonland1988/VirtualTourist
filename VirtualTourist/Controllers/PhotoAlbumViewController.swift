@@ -22,7 +22,8 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     
     @IBOutlet weak var photoFlowLayout: UICollectionViewFlowLayout!
     
-
+    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
+    
     
     
     // MARK: Actions
@@ -139,6 +140,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
                 if let response = response {
                     cell.imageView.image = response
                 } else {
+                    self.showAlert(title: "Could not find a image", message: error?.localizedDescription ?? "")
                     print("could not find a image")
                 }
             }
@@ -191,6 +193,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
 
     // MARK: get photoList and add in CoreData
     func getPhotoListHandler(pages: Int){
+        searchingImageActive(true)
         let requestURL = FlickrClient.requestPhotosURL(coordinate: pickedLocation, page: Int.random(in: 1...pages))
         
         FlickrClient.taskForGETRequest(url: requestURL, responseType: PhotoList.self){ response, error in
@@ -200,9 +203,13 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
                 for i in response.photos.photo {
                     //id, url
                     self.addCoreDataPhoto(id: i.id, photoURL: FlickrClient.getPhotoImageURL(serverId: i.server, id: i.id, secret: i.secret, sizeSuffix: "q"))
+                    
                 }
+                self.searchingImageActive(false)
             } else {
+                self.showAlert(title: "Could not find a imageList", message: error?.localizedDescription ?? "")
                 print("could not find the list")
+                self.searchingImageActive(false)
             }
         }
     }
@@ -246,6 +253,12 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
 //        }
 //        try? dataController.viewContext.save()
 //    }
+    
+    func searchingImageActive(_ active: Bool){
+        active ? activityIndicator.startAnimating() : activityIndicator.stopAnimating()
+        newCollectionButton.isEnabled = !active
+    }
+    
     
 }
 

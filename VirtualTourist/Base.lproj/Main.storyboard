@@ -84,6 +84,10 @@
                                             <size key="footerReferenceSize" width="0.0" height="0.0"/>
                                             <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
+                                        <activityIndicatorView key="backgroundView" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="large" id="bEd-YC-Zxd">
+                                            <rect key="frame" x="0.0" y="0.0" width="414" height="514"/>
+                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        </activityIndicatorView>
                                         <cells>
                                             <collectionViewCell opaque="NO" clipsSubviews="YES" contentMode="center" reuseIdentifier="photoCollectionCell" id="Xjc-ml-7KY" customClass="PhotoAlbumCollectionCell" customModule="VirtualTourist" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="0.0" width="150" height="150"/>
@@ -147,6 +151,7 @@
                     </navigationItem>
                     <value key="contentSizeForViewInPopover" type="size" width="414" height="842"/>
                     <connections>
+                        <outlet property="activityIndicator" destination="bEd-YC-Zxd" id="Srd-Di-Usz"/>
                         <outlet property="mapView" destination="Qm5-4a-X58" id="IKD-uH-4lx"/>
                         <outlet property="newCollectionButton" destination="jWy-wL-ich" id="KMm-IQ-zVd"/>
                         <outlet property="photoCollectionView" destination="xO6-AC-2lq" id="wBF-u6-tGM"/>
