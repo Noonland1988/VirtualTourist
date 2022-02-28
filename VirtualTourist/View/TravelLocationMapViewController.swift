@@ -138,24 +138,6 @@ class TravelLocationMapViewController: UIViewController,MKMapViewDelegate, NSFet
         
     }
     
-    // MARK: CoreData handling
-    
-//    fileprivate func setUpFetchedResultController() {
-//        let fetchRequest: NSFetchRequest<Coordinate> = Coordinate.fetchRequest()
-//        let sortDescriptor = NSSortDescriptor(key: "creationDate", ascending: false)
-//        fetchRequest.sortDescriptors = [sortDescriptor]
-//
-//        fetchedResultController = NSFetchedResultsController(fetchRequest: fetchRequest, managedObjectContext: dataController.viewContext, sectionNameKeyPath: nil, cacheName: nil)
-//        fetchedResultController.delegate = self //added NSFetchedResultsControllerDelegate to the class for this
-//
-//        do {
-//            try fetchedResultController.performFetch()
-//        } catch {
-//            fatalError("The fetch could not be performed:\(error.localizedDescription)")
-//        }
-//    }
-    
-    
     func addCoordinate(newCoordinate: CLLocationCoordinate2D) {
         let coordinate = Coordinate(context: dataController.viewContext)
         coordinate.latitude = Float(newCoordinate.latitude)

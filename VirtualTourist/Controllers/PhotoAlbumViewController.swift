@@ -31,14 +31,14 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     @IBAction func okButtonTapped(_ sender: UIBarButtonItem) {
         self.navigationController?.popViewController(animated: true)
         fetchedResultsController = nil
-        flickrPages = nil
     }
     
     
     @IBAction func newCollectionButtonTapped(_ sender: Any) {
         deleteAllCells()
+        photoCollectionView.reloadData()
         print("deletion completed")
-        getPhotoListHandler(pages: flickrPages)
+        getPhotoListHandler()
         try? dataController.viewContext.save()
     }
     
@@ -48,8 +48,6 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     var pickedLocation: CLLocationCoordinate2D!
     
     var fetchedResultsController: NSFetchedResultsController<Photo>!
-    
-    var flickrPages: Int!
     
     var downloadedphotoList: PhotoList!
     
@@ -73,10 +71,9 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         
         setUpFetchedResultsController()
         if photoCollectionView.numberOfItems(inSection: 0) == 0 {
-            getPhotoListHandler(pages: 1)
+            getPhotoListHandler()
             print("Photohandler activated")
         } else {
-            flickrPages = 1
             print("Photos alreadly exist")
         }
         
@@ -133,20 +130,28 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         let aPhoto = fetchedResultsController.object(at: indexPath)
         
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "photoCollectionCell", for: indexPath) as! PhotoAlbumCollectionCell
-        cell.imageView.image = UIImage(named: "collectionPlaceholder")
         
-        if let photoURL = aPhoto.photoURL {
-            self.getAImage(url: photoURL) { response, error in
-                if let response = response {
-                    cell.imageView.image = response
-                } else {
-                    self.showAlert(title: "Could not find a image", message: error?.localizedDescription ?? "")
-                    print("could not find a image")
-                }
-            }
+        if aPhoto.photoImage != nil {
+            cell.imageView.image = UIImage(data: aPhoto.photoImage!)
         } else {
-            print("could not find image url")
+            if let photoURL = aPhoto.photoURL {
+                self.getAImage(url: photoURL) { response, error in
+                    if let response = response {
+                        aPhoto.photoImage = response.jpegData(compressionQuality: 1)
+                        DispatchQueue.main.async {
+                            cell.imageView.image = response
+                        }
+                    } else {
+                        self.showAlert(title: "Could not find a image", message: error?.localizedDescription ?? "")
+                        print("could not find a image")
+                    }
+                }
+            } else {
+                print("could not find image url")
+            }
         }
+        
+
         
         return cell
         
@@ -157,7 +162,9 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let selectedCell = fetchedResultsController.object(at: indexPath)
         print("a cell selected")
+        
         dataController.viewContext.delete(selectedCell)
+        collectionView.deleteItems(at: [indexPath])
         try? dataController.viewContext.save()
         
     }
@@ -184,27 +191,26 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     func addCoreDataPhoto(id: String, photoURL: String) {
         let photo = Photo(context: dataController.viewContext)
         photo.id = Int64(id)!
-        //photo.photoImage = photoImage.jpegData(compressionQuality: 1)
         photo.coordinate = coordinate
         photo.photoURL = photoURL
-        try? dataController.viewContext.save()
     }
     
 
     // MARK: get photoList and add in CoreData
-    func getPhotoListHandler(pages: Int){
+    func getPhotoListHandler(){
         searchingImageActive(true)
-        let requestURL = FlickrClient.requestPhotosURL(coordinate: pickedLocation, page: Int.random(in: 1...pages))
+        let requestURL = FlickrClient.requestPhotosURL(coordinate: pickedLocation, page: Int.random(in: 1...10))
         
         FlickrClient.taskForGETRequest(url: requestURL, responseType: PhotoList.self){ response, error in
             if let response = response {
-                self.flickrPages = response.photos.pages
                 self.downloadedphotoList = response
                 for i in response.photos.photo {
                     //id, url
                     self.addCoreDataPhoto(id: i.id, photoURL: FlickrClient.getPhotoImageURL(serverId: i.server, id: i.id, secret: i.secret, sizeSuffix: "q"))
                     
                 }
+                try? self.dataController.viewContext.save()
+                self.photoCollectionView.reloadData()
                 self.searchingImageActive(false)
             } else {
                 self.showAlert(title: "Could not find a imageList", message: error?.localizedDescription ?? "")
@@ -214,14 +220,29 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
         }
     }
     
+    func downloadImage(imagePath: String, completionHandler: @escaping (_ imageData: Data?, _ errorString: String?) -> Void){
+        let session = URLSession.shared
+        let imgURL = NSURL(string: imagePath)
+        let request: NSURLRequest = NSURLRequest(url: imgURL! as URL)
+        
+        let task = session.dataTask(with: request as URLRequest) {data, response, downloadError in
+            if downloadError != nil {
+                completionHandler(nil, "Could not download image \(imagePath)")
+            } else {
+                completionHandler(data, nil)
+            }
+            
+        }
+        task.resume()
+    }
+    
     
     func getAImage(url:String, completion: @escaping (UIImage?, Error?) -> Void) {
         let imageURL = URL(string: url)
         do {
-            let data = try Data(contentsOf: imageURL!)
-            completion(UIImage(data: data), nil)
-        } catch {
-            completion(nil, error)
+            downloadImage(imagePath: imageURL!.absoluteString) {imageData, errorString in
+                completion(UIImage(data: imageData!), nil)
+            }
         }
         
     }
@@ -234,25 +255,7 @@ class PhotoAlbumViewController: UIViewController, MKMapViewDelegate, UICollectio
     }
 
     
-// Does not seems to work...
-//    func updateCoreDataPhoto() {
-//        print("updateCoreDataPhoto initiated")
-//        let coreDataPhotos = dataController.viewContext.object(with: self.coordinate.objectID) as! Coordinate
-//        for i in coreDataPhotos.photos!.allObjects as! [Photo] {
-//            if let photoURL = i.photoURL{
-//                self.getAImage(url: photoURL) { response, error in
-//                    if let response = response {
-//                        i.photoImage = response.jpegData(compressionQuality: 1)
-//                    } else {
-//                        print("could not find a image")
-//                    }
-//                }
-//            } else {
-//                print("could not find image url")
-//            }
-//        }
-//        try? dataController.viewContext.save()
-//    }
+
     
     func searchingImageActive(_ active: Bool){
         active ? activityIndicator.startAnimating() : activityIndicator.stopAnimating()
@@ -290,15 +293,15 @@ extension PhotoAlbumViewController: NSFetchedResultsControllerDelegate {
         }
 
         func controllerWillChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-            blocks.removeAll()
+//            blocks.removeAll()
         }
 
         func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-            photoCollectionView.performBatchUpdates({
-                self.blocks.forEach { (block) in
-                    block()
-                }
-            }, completion: nil)
+//            photoCollectionView.performBatchUpdates({
+//                self.blocks.forEach { (block) in
+//                    block()
+//                }
+//            }, completion: nil)
         }
     
     
